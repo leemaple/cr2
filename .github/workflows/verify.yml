@@ -1,0 +1,46 @@
+name: Verify workbench
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Download pinned encryption engine
+        run: |
+          mkdir -p wheels
+          python -m pip download --no-deps tenseal==0.3.16 -d wheels
+      - name: Preserve encryption engine for isolated validation
+        uses: actions/upload-artifact@v4
+        with:
+          name: tenseal-cp313-linux
+          path: wheels/*.whl
+          retention-days: 7
+      - name: Install and test application when present
+        shell: bash
+        run: |
+          if [ -f requirements.txt ]; then
+            python -m pip install -r requirements.txt
+            python -m pip install pytest==9.0.2 httpx==0.28.1
+            python -m compileall -q veclab tests
+            python -m pytest -q --junitxml=test-results.xml
+          else
+            echo 'Dependency bootstrap only; application tests are not yet present.'
+          fi
+      - name: Preserve actual test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results.xml
+          if-no-files-found: ignore
+          retention-days: 14
