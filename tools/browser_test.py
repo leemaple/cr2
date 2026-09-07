@@ -8,7 +8,6 @@ import argparse
 import hashlib
 import json
 import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -114,7 +113,8 @@ def main():
                     assert response.status == 200, response.text()
                     return response.json()
 
-                page.goto(base, wait_until="networkidle")
+                page.goto(base, wait_until="domcontentloaded")
+                expect(page.locator("#login-screen")).to_be_visible()
                 capture("打开登录页面", "在浏览器打开部署地址，确认软件全称与V1.0版本。",
                         "出现本地工作台登录表单；尚未登录不能访问业务数据。")
                 page.fill("#login-user", "admin")
@@ -242,7 +242,8 @@ def main():
                 with context.expect_page() as popup:
                     action("preview-report").click()
                 report_page = popup.value
-                report_page.wait_for_load_state("networkidle")
+                report_page.wait_for_load_state("domcontentloaded")
+                expect(report_page.locator("body")).to_contain_text("密态向量检索与评测管理系统")
                 capture("预览结果报告", "点击预览报告，在新页面查看结果报告。",
                         "报告包含软件名称、任务信息、实际结果和边界说明。", report_page)
                 report_page.close()
