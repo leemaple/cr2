@@ -6,6 +6,9 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+defaults:
+  run:
+    shell: bash
 jobs:
   verify:
     runs-on: ubuntu-latest
@@ -28,6 +31,7 @@ jobs:
           python --version > evidence/environment.txt
           uname -a >> evidence/environment.txt
           python -m pip freeze >> evidence/environment.txt
+          python -c 'import tenseal, numpy; print(tenseal.__version__, numpy.__version__)' > evidence/engine-import.txt
           python - <<'PY'
           from pathlib import Path
           import hashlib,json,zipfile
@@ -44,10 +48,10 @@ jobs:
         run: |
           python -m compileall -q veclab tests tools
           node --check veclab/static/app.js
-          python -m pytest -q --junitxml=evidence/tests.xml | tee evidence/tests.log
+          python -m pytest -q --junitxml=evidence/tests.xml 2>&1 | tee evidence/tests.log
       - name: Execute real HTTP browser workflow and capture screenshots
         run: |
-          python tools/browser_test.py --output evidence/browser | tee evidence/browser.log
+          python tools/browser_test.py --output evidence/browser 2>&1 | tee evidence/browser.log
       - name: Preserve actual evidence
         if: always()
         uses: actions/upload-artifact@v4
