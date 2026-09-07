@@ -40,6 +40,8 @@ class VectorRecord(StrictModel):
         cleaned = [tag.strip() for tag in value]
         if any(not tag or len(tag) > 32 for tag in cleaned):
             raise ValueError("标签长度应为1至32个字符")
+        if any(";" in tag for tag in cleaned):
+            raise ValueError("标签不能包含英文分号；CSV使用分号分隔标签")
         if len(set(cleaned)) != len(cleaned):
             raise ValueError("同一记录不能包含重复标签")
         return cleaned
