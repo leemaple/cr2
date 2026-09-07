@@ -1,0 +1,52 @@
+name: Materialize reviewed source
+on:
+  push:
+    paths: ['incoming/part-4.b64']
+permissions:
+  contents: write
+jobs:
+  source:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify and materialize the submitted source
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path, PurePosixPath
+          import base64, hashlib, json, lzma
+          text = ''.join(Path(f'incoming/part-{i}.b64').read_text().strip() for i in range(1,5))
+          packed = base64.b64decode(text, validate=True)
+          assert hashlib.sha256(packed).hexdigest() == 'a45e39fd31474b5a7f1d4075e67b11601d451d79e0123c10f393b69570e6d587'
+          files = json.loads(lzma.decompress(packed))
+          assert len(files) == 26
+          roots = {'veclab', 'tests', 'tools'}
+          names = {'.gitignore','README.md','THIRD_PARTY_NOTICES.md','requirements.txt','requirements-dev.txt','run.sh','run.bat'}
+          for name, content in files.items():
+              path = PurePosixPath(name)
+              assert not path.is_absolute() and '..' not in path.parts and '\\' not in name
+              assert path.parts[0] in roots or name in names
+              assert isinstance(content, str)
+          for name, content in files.items():
+              path = Path(name)
+              path.parent.mkdir(parents=True, exist_ok=True)
+              path.write_text(content, encoding='utf-8')
+          Path('run.sh').chmod(0o755)
+          Path('evidence').mkdir(exist_ok=True)
+          Path('evidence/source-import.json').write_text(json.dumps({
+              'packed_sha256': hashlib.sha256(packed).hexdigest(),
+              'files': {k:hashlib.sha256(v.encode()).hexdigest() for k,v in files.items()}
+          }, indent=2))
+          PY
+          python -m compileall -q veclab tests tools
+          node --check veclab/static/app.js
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add veclab tests tools README.md THIRD_PARTY_NOTICES.md requirements.txt requirements-dev.txt run.sh run.bat .gitignore evidence/source-import.json
+          git rm incoming/part-*.b64
+          git commit -m 'feat: implement original encrypted vector retrieval and evaluation workbench'
+          git push origin HEAD:main
