@@ -8,6 +8,8 @@ HEVEC: https://github.com/cloneisyou/HEVEC 。查阅日期2026-09-07；其仓库
 
 TenSEAL 0.3.16（Apache-2.0，https://github.com/OpenMined/TenSEAL）封装Microsoft SEAL实现CKKS。本项目原创部分是数据校验、任务编排、评测、报告、界面、审计和运维逻辑，不将第三方密码原语实现主张为自研。
 
+NumPy 2.3.5是TenSEAL导入和向量处理所需的第三方依赖，已显式写入requirements.txt，不属于本项目自编源码。
+
 FastAPI、Starlette、Pydantic和Uvicorn分别适用其上游许可证；Python/SQLite和浏览器亦为第三方软件。Playwright、pytest、httpx、python-docx仅用于开发或验证。所有依赖按上游发布包获取，没有将第三方源码复制进veclab目录或3000行鉴别材料。分发含依赖的安装包时应保留各发布包许可证和通知，本仓库只提供依赖清单，不提供打包二进制分发。
 
 ## 本项目权利核实
